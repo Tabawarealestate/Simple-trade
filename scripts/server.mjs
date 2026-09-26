@@ -65,6 +65,10 @@ export function createApplication() {
       respond(response, 200, { data: [], status: 'DATA_UNAVAILABLE', asOf: new Date().toISOString(), requestId: id }, id, request.method);
       return;
     }
+    if (['/api/v1/account', '/api/v1/settings', '/api/v1/referrals', '/api/v1/agents', '/api/v1/crypto', '/api/v1/contracts', '/api/v1/betslips'].includes(url.pathname)) {
+      respond(response, 503, { type: 'https://asterion.invalid/problems/feature-unavailable', title: 'Feature unavailable', status: 503, detail: 'This feature requires an authenticated, authorized, audited, provider-backed implementation and is not enabled.', requestId: id }, id, request.method);
+      return;
+    }
     if (url.pathname.startsWith('/api/')) {
       respond(response, 404, { type: 'https://asterion.invalid/problems/not-found', title: 'API route not found', status: 404, requestId: id }, id, request.method);
       return;

@@ -34,6 +34,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MarketCatalogueResponse' }
+  /api/v1/account:
+    get:
+      summary: Retrieve the authenticated account settings
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/settings:
+    get:
+      summary: Retrieve account preference settings
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/referrals:
+    get:
+      summary: Retrieve the authenticated referral dashboard
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/agents:
+    get:
+      summary: List verified payment agents available to the authenticated user
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/crypto:
+    get:
+      summary: Retrieve configured direct-crypto capabilities
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/contracts:
+    get:
+      summary: List currently available configured financial contracts
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/betslips:
+    get:
+      summary: Retrieve authenticated financial contract slips
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
   /api/v1/quotes/{instrumentId}:
     get:
       summary: Get a provider-sourced quote or explicit unavailable status
@@ -86,6 +121,11 @@ components:
       required: false
       schema: { type: string, format: uuid }
   responses:
+    FeatureUnavailable:
+      description: Feature is intentionally unavailable until its authenticated, authorized, audited, and provider-backed vertical slice is implemented.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
     Problem:
       description: RFC 9457-style structured error
       content:

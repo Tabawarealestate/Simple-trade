@@ -55,3 +55,29 @@ test('market API never manufactures an instrument when no authorized provider is
     assert.match(payload.requestId, /^[a-z0-9-]+$/i);
   });
 });
+
+const v3Migration = await readFile(new URL('../database/migrations/002_v3_platform_extensions.sql', import.meta.url), 'utf8');
+
+test('V3 records preserve server-authoritative and ledger-linked financial controls', () => {
+  assert.match(v3Migration, /CREATE TABLE referral_rewards/);
+  assert.match(v3Migration, /ledger_transaction_id uuid REFERENCES ledger_transactions/);
+  assert.match(v3Migration, /CHECK \(referrer_user_id <> invited_user_id\)/);
+  assert.match(v3Migration, /CREATE TABLE agent_transactions/);
+  assert.match(v3Migration, /UNIQUE \(user_id, kind, idempotency_key\)/);
+  assert.match(v3Migration, /CREATE TABLE product_versions/);
+  assert.match(v3Migration, /CREATE TABLE bet_slip_selections/);
+  assert.match(v3Migration, /CREATE TABLE reconciliation_cases/);
+  assert.match(v3Migration, /CREATE TRIGGER referral_rewards_immutable_when_posted/);
+  assert.match(v3Migration, /CREATE TRIGGER agent_transactions_immutable_when_completed/);
+  assert.match(v3Migration, /CREATE TRIGGER approved_product_rules_immutable/);
+});
+
+test('unimplemented V3 financial API namespaces explicitly fail closed', async () => {
+  await withServer(async (origin) => {
+    const response = await fetch(`${origin}/api/v1/agents`);
+    assert.equal(response.status, 503);
+    const payload = await response.json();
+    assert.equal(payload.title, 'Feature unavailable');
+    assert.match(payload.detail, /authenticated, authorized, audited, provider-backed/i);
+  });
+});

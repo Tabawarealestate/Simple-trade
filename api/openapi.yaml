@@ -1,0 +1,199 @@
+openapi: 3.1.0
+info:
+  title: Asterion Markets API
+  version: 1.0.0-draft
+  description: |
+    Draft server-authoritative contract. This API does not expose fabricated financial values.
+    Quotes, balances, order outcomes, and settlements require traceable server records.
+servers:
+  - url: https://api.example.invalid
+paths:
+  /live:
+    get:
+      summary: Process liveness check
+      responses:
+        '200': { description: Process is running }
+  /ready:
+    get:
+      summary: Dependency readiness check
+      responses:
+        '200': { description: Required dependencies ready }
+        '503': { description: Dependency unavailable; financial actions must remain disabled }
+  /health:
+    get:
+      summary: Non-sensitive runtime health summary
+      responses:
+        '200': { description: Runtime health response without configuration secrets }
+  /api/v1/markets:
+    get:
+      summary: List configured instruments from authorized provider configuration
+      description: Returns an empty list with DATA_UNAVAILABLE until authorized providers and instruments are configured. Example UI symbols must not be returned as market data.
+      responses:
+        '200':
+          description: Configured market catalogue or explicit unavailable state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketCatalogueResponse' }
+  /api/v1/account:
+    get:
+      summary: Retrieve the authenticated account settings
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/settings:
+    get:
+      summary: Retrieve account preference settings
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/referrals:
+    get:
+      summary: Retrieve the authenticated referral dashboard
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/agents:
+    get:
+      summary: List verified payment agents available to the authenticated user
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/crypto:
+    get:
+      summary: Retrieve configured direct-crypto capabilities
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/surge:
+    get:
+      summary: Retrieve an authoritative Market Surge round and transparency state
+      description: No multiplier, round history, participant activity, or settlement result is returned until an approved ruleset, methodology, and real-time backend are implemented.
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/contracts:
+    get:
+      summary: List currently available configured financial contracts
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/betslips:
+    get:
+      summary: Retrieve authenticated financial contract slips
+      responses:
+        '503': { $ref: '#/components/responses/FeatureUnavailable' }
+  /api/v1/quotes/{instrumentId}:
+    get:
+      summary: Get a provider-sourced quote or explicit unavailable status
+      parameters:
+        - $ref: '#/components/parameters/InstrumentId'
+      responses:
+        '200':
+          description: Quote response; no price fields are present unless source status is AVAILABLE.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuoteResponse' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /api/v1/orders:
+    post:
+      summary: Create a server-authoritative order request
+      description: Client values are never authoritative for price, fees, acceptance, execution, or settlement.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrderRequest' }
+      responses:
+        '201':
+          description: Command accepted and server order record created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+components:
+  parameters:
+    InstrumentId:
+      in: path
+      name: instrumentId
+      required: true
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 255 }
+    RequestId:
+      in: header
+      name: X-Request-Id
+      required: false
+      schema: { type: string, format: uuid }
+  responses:
+    FeatureUnavailable:
+      description: Feature is intentionally unavailable until its authenticated, authorized, audited, and provider-backed vertical slice is implemented.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Problem:
+      description: RFC 9457-style structured error
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    MarketCatalogueResponse:
+      type: object
+      required: [data, status, asOf, requestId]
+      properties:
+        data:
+          type: array
+          description: Empty until a configured, authorized source makes instruments available.
+          items:
+            type: object
+            required: [id, symbol, assetClass]
+            properties:
+              id: { type: string, format: uuid }
+              symbol: { type: string }
+              assetClass: { type: string, enum: [FOREX, CRYPTO, STOCK, INDEX, COMMODITY, METAL] }
+        status: { type: string, enum: [AVAILABLE, DATA_UNAVAILABLE] }
+        asOf: { type: string, format: date-time }
+        requestId: { type: string, format: uuid }
+    QuoteResponse:
+      type: object
+      required: [instrumentId, status, asOf]
+      properties:
+        instrumentId: { type: string, format: uuid }
+        status: { type: string, enum: [AVAILABLE, STALE, UNAVAILABLE, HALTED] }
+        asOf: { type: string, format: date-time }
+        source: { type: string }
+        bid: { type: [number, 'null'] }
+        ask: { type: [number, 'null'] }
+        last: { type: [number, 'null'] }
+    CreateOrderRequest:
+      type: object
+      required: [instrumentId, productType, direction, notionalMinor, currency]
+      properties:
+        instrumentId: { type: string, format: uuid }
+        productType: { type: string, enum: [MARKET, LIMIT, STOP, HIGHER, LOWER, ABOVE, BELOW, TOUCH, NO_TOUCH, RANGE] }
+        direction: { type: string, enum: [BUY, SELL] }
+        notionalMinor: { type: integer, minimum: 1 }
+        currency: { type: string, enum: [NGN, USD, EUR, GBP] }
+        clientReference: { type: string, maxLength: 128 }
+    Order:
+      type: object
+      required: [id, status, instrumentId, productType, direction, notionalMinor, currency, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, OPEN, PARTIALLY_FILLED, FILLED, CANCELLED, EXPIRED, SETTLED, REJECTED] }
+        instrumentId: { type: string, format: uuid }
+        productType: { type: string }
+        direction: { type: string }
+        notionalMinor: { type: integer }
+        currency: { type: string }
+        createdAt: { type: string, format: date-time }
+    Problem:
+      type: object
+      required: [type, title, status, requestId]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        requestId: { type: string, format: uuid }

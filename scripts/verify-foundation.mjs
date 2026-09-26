@@ -10,7 +10,7 @@ const required = {
   'api/openapi.yaml': ['openapi: 3.1.0', 'name: Idempotency-Key', '/api/v1/orders:', 'UNAVAILABLE'],
   'docs/architecture.md': ['The API returns server-derived values only', 'must not scrape sources'],
   'web/index.html': ['Market data unavailable', 'No orders to show', 'Market Surge'],
-  'scripts/serve-preview.mjs': ["Content-Security-Policy", "X-Content-Type-Options"],
+  'scripts/server.mjs': ["Content-Security-Policy", "X-Content-Type-Options", "DATA_UNAVAILABLE", "X-Request-Id"],
 };
 for (const [path, terms] of Object.entries(required)) {
   const contents = await readFile(path, 'utf8');

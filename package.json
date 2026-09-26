@@ -10,6 +10,7 @@
     "check": "node scripts/verify-foundation.mjs",
     "test": "node --test tests/foundation.test.mjs",
     "dev": "node scripts/serve-preview.mjs",
-    "start": "node scripts/serve-preview.mjs"
+    "start": "node scripts/serve-preview.mjs",
+    "build": "node --check scripts/server.mjs && node --check scripts/serve-preview.mjs && node --check web/app.js"
   }
 }

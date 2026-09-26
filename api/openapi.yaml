@@ -18,7 +18,22 @@ paths:
       summary: Dependency readiness check
       responses:
         '200': { description: Required dependencies ready }
-        '503': { description: Dependency unavailable }
+        '503': { description: Dependency unavailable; financial actions must remain disabled }
+  /health:
+    get:
+      summary: Non-sensitive runtime health summary
+      responses:
+        '200': { description: Runtime health response without configuration secrets }
+  /api/v1/markets:
+    get:
+      summary: List configured instruments from authorized provider configuration
+      description: Returns an empty list with DATA_UNAVAILABLE until authorized providers and instruments are configured. Example UI symbols must not be returned as market data.
+      responses:
+        '200':
+          description: Configured market catalogue or explicit unavailable state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketCatalogueResponse' }
   /api/v1/quotes/{instrumentId}:
     get:
       summary: Get a provider-sourced quote or explicit unavailable status
@@ -77,6 +92,23 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    MarketCatalogueResponse:
+      type: object
+      required: [data, status, asOf, requestId]
+      properties:
+        data:
+          type: array
+          description: Empty until a configured, authorized source makes instruments available.
+          items:
+            type: object
+            required: [id, symbol, assetClass]
+            properties:
+              id: { type: string, format: uuid }
+              symbol: { type: string }
+              assetClass: { type: string, enum: [FOREX, CRYPTO, STOCK, INDEX, COMMODITY, METAL] }
+        status: { type: string, enum: [AVAILABLE, DATA_UNAVAILABLE] }
+        asOf: { type: string, format: date-time }
+        requestId: { type: string, format: uuid }
     QuoteResponse:
       type: object
       required: [instrumentId, status, asOf]

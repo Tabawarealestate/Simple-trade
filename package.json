@@ -1,0 +1,15 @@
+{
+  "name": "asterion-markets-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Financial-market platform foundation with auditable financial controls",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/verify-foundation.mjs",
+    "test": "node --test tests/foundation.test.mjs",
+    "dev": "node scripts/serve-preview.mjs",
+    "start": "node scripts/serve-preview.mjs"
+  }
+}
